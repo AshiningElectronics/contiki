@@ -44,7 +44,7 @@
 
 PROCESS(webserver_nogui_process, "Web server");
 
-AUTOSTART_PROCESSES(&webserver_nogui_process);
+//AUTOSTART_PROCESSES(&webserver_nogui_process);
 
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(webserver_nogui_process, ev, data)
