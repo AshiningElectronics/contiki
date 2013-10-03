@@ -112,6 +112,9 @@ target_makefile := $(wildcard $(CONTIKI)/platform/$(TARGET)/Makefile.$(TARGET) $
 ifeq ($(strip $(target_makefile)),)
   ${error The target platform "$(TARGET)" does not exist (maybe it was misspelled?)}
 else
+  ifeq (${wildcard $(OBJECTDIR)},)
+    DUMMY := ${shell mkdir $(OBJECTDIR)}
+  endif
   ifneq (1, ${words $(target_makefile)})
     ${error More than one TARGET Makefile found: $(target_makefile)}
   endif
