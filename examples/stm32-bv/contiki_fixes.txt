@@ -1,0 +1,47 @@
+Here are some things in contiki that have been fixed for this port to work.
+Maybe some of them are bugs?
+
+################################################################################
+
+In core/dev/cc2520.h, remove the line with SPI_WAITFORTxREADY();
+(this should probably not be there anyway)
+
+################################################################################
+
+In the main Makefile.include, change:
+
+# Check if the target makefile exists, and create the object directory if necessary.
+ifeq ($(strip $(target_makefile)),)
+  ${error The target platform "$(TARGET)" does not exist (maybe it was misspelled?)}
+else
+  ifneq (1, ${words $(target_makefile)})
+    ${error More than one TARGET Makefile found: $(target_makefile)}
+  endif
+  include $(target_makefile)
+endif
+
+to
+
+# Check if the target makefile exists, and create the object directory if necessary.
+ifeq ($(strip $(target_makefile)),)
+  ${error The target platform "$(TARGET)" does not exist (maybe it was misspelled?)}
+else
+  ifeq (${wildcard $(OBJECTDIR)},)
+    DUMMY := ${shell mkdir $(OBJECTDIR)}
+  endif
+  ifneq (1, ${words $(target_makefile)})
+    ${error More than one TARGET Makefile found: $(target_makefile)}
+  endif
+  include $(target_makefile)
+endif
+
+Otherwise, the target object directory won't be created. I don't know why this
+is removed from the master branch, probably a mistake. It was there before.
+
+################################################################################
+
+AUTOSTART_PROCESSES can only be defined once, so in order for applications to work,
+it has to be removed from each application. Otherwise, it won't compile.
+
+################################################################################
+

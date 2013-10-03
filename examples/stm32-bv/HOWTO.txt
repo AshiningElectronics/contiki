@@ -1,0 +1,28 @@
+1. Go to examples/stm32-bv/rpl-border-router and run (with the programmer connected)
+make TARGET=stm32-bv clean
+make TARGET=stm32-bv NODEID=1 upload
+
+2. Connect (replace the port with the one you get, e.g. /dev/ttyACM0)
+make connect-router TTY_PORT=/dev/ttyACM3
+
+3. Try to ping the server
+ping6 aaaa::200:0:0:1
+
+4. See if the webserver works
+http://[aaaa::200:0:0:1]/
+
+5. Go to examples/stm32-bv/test and run (with the programmer connected to another mote)
+make TARGET=stm32-bv clean
+make TARGET=stm32-bv NODEID=6 PRINTF_VCP=0 upload
+
+6. Try to ping the remote mote:
+ping6 aaaa::200:0:0:6
+
+7. Try the webpage again to see if the other mote shows up:
+http://[aaaa::200:0:0:1]/
+
+############ Notes ############
+* In order to apply the passed arguments (e.g. NODEID=x), clean has to be run on the project.
+* The PRINTF_VCP-flag specifies that debug output should be redirected to the usb virtual serial port by default. When it is enabled, the program can freeze until the output is read, so if you don't plan to use it, switch it off.
+* The NODEID-flag will become the last part of the IP address.
+
