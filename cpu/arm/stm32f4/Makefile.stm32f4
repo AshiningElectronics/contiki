@@ -1,0 +1,185 @@
+### Code common for all ARM CPUs
+CONTIKI_CPU_ARM=$(CONTIKI)/cpu/arm/
+
+### Define the CPU directory
+CONTIKI_CPU=$(CONTIKI_CPU_ARM)/stm32f4
+
+### Define the source files we have in the STM32F4 port
+include $(CONTIKI_CPU)/lib/lib.mk
+
+CONTIKI_CPU_DIRS =	. $(STM32_CORE) $(STM32_CONF) $(CMSIS) $(STDPERIPH_DIR) \
+					$(USB_OTG_PATH) $(USB_DEVICE_CORE_PATH) \
+					$(USB_DEVICE_CLASS_CDC_PATH)
+
+STM32F4 = clock.c system_stm32f4xx.c rtimer-arch.c startup_stm32f4.c
+
+TARGETLIBS =	$(STDPERIPH_SRC) $(USB_OTG_SRC) $(USB_DEVICE_CORE_SRC) \
+				$(USB_DEVICE_CLASS_CDC_SRC) random.c watchdog.c \
+				uip_arch.c me.c me_tabs.c slip.c crc16.c \
+				debug-buffer.c
+
+ifeq ($(SLIP_USB_CDC),1)
+TARGETLIBS += slip-usb-cdc.c
+endif
+
+INTERRUPT_SOURCEFILES += interrupts-cpu.c syscalls.c
+
+USB = usb_bsp.c usbd_cdc_vcp.c usbd_desc.c usbd_usr.c
+
+CONTIKI_TARGET_SOURCEFILES += $(STM32F4) $(SYSAPPS) \
+			$(TARGETLIBS) $(UIPDRIVERS) $(USB)
+
+CONTIKI_SOURCEFILES += $(CONTIKI_TARGET_SOURCEFILES)
+
+THREADS =
+
+### Compiler definitions
+CC       = arm-none-eabi-gcc
+LD       = arm-none-eabi-gcc
+AS       = arm-none-eabi-as
+AR       = arm-none-eabi-ar
+NM       = arm-none-eabi-nm
+OBJCOPY  = arm-none-eabi-objcopy
+STRIP    = arm-none-eabi-strip
+SIZE     = arm-none-eabi-size
+
+XSLTPROC=xsltproc
+
+INTERRUPT_OBJECTFILES = $(INTERRUPT_SOURCEFILES:.c=.o)
+PROJECT_OBJECTFILES += ${addprefix $(OBJECTDIR)/,$(CONTIKI_TARGET_MAIN:.c=.o)}
+
+# The linker script
+LINKERSCRIPT = $(CONTIKI_CPU)/STM32F4.ld
+
+# JTAG program upload
+OPENOCD	 = openocd
+OPENOCD_DIR = $(CONTIKI_CPU_ARM)/openocd/ 
+OPENOCD_CFG = arm7_wig.cfg
+
+# USB program upload
+# qstlink
+
+# Use qstlink by default
+PROG=qstlink
+
+ARCH_FLAGS = -mlittle-endian -mthumb -mthumb-interwork -mcpu=cortex-m4
+
+# Hard float
+ARCH_FLAGS += -fsingle-precision-constant -Wdouble-promotion
+ARCH_FLAGS += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+# or soft float
+#ARCH_FLAGS += -msoft-float
+
+CFLAGSNO = -I. -I$(CONTIKI)/core -I$(CONTIKI_CPU) -I$(CONTIKI_CPU)/loader \
+           -I$(CONTIKI)/platform/$(TARGET) \
+           ${addprefix -I,$(APPDIRS)} \
+           -DWITH_ASCII -DMCK=$(MCK) \
+           -Wall $(ARCH_FLAGS) \
+           -Wno-strict-aliasing
+           
+CFLAGS  += $(CFLAGSNO) -DRUN_AS_SYSTEM -DROM_RUN
+LDFLAGS += -L $(CONTIKI_CPU) -T $(LINKERSCRIPT) \
+           -nostartfiles
+
+ifeq ($(DEBUG_BUILD),1)
+CFLAGS  += -O0 -g
+else
+CFLAGS  += -O2
+endif
+
+CDEPFLAGS = $(CFLAGS) -D __MAKING_DEPS__
+
+
+### Setup directory search path for source files
+
+CUSTOM_RULE_C_TO_OBJECTDIR_O=yes
+CUSTOM_RULE_C_TO_O=yes
+
+%.o: %.c
+	$(CC) $(CFLAGS) $< -c
+
+$(OBJECTDIR)/%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
+CUSTOM_RULE_S_TO_OBJECTDIR_O = yes
+%.o: %.S
+	$(CC) $(CFLAGS) $< -c
+
+$(OBJECTDIR)/%.o: %.S
+	$(CC) $(CFLAGS) $< -c  -o $@
+
+
+CUSTOM_RULE_C_TO_CO=yes
+
+%.co: %.c
+	$(CC) $(CFLAGS) $< -c -o $@
+
+CUSTOM_RULE_C_TO_CE=yes
+
+%.ce: %.o
+	$(LD) $(LDFLAGS) --relocatable -T $(CONTIKI_CPU)/merge-rodata.ld $< -o $@
+	$(STRIP) -K _init -K _fini --strip-unneeded -g -x $@
+
+CUSTOM_RULE_LINK=yes
+
+%-stripped.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+	$(STRIP) --strip-unneeded -g -x $@
+
+%-stripped.o: %.o
+	$(STRIP) --strip-unneeded -g -x -o $@ $<
+
+%.o: ${CONTIKI_TARGET}/loader/%.S
+	$(AS) -o $(notdir $(<:.S=.o)) $<
+
+%-nosyms.$(TARGET).elf: %.co $(PROJECT_OBJECTFILES) $(INTERRUPT_OBJECTFILES) contiki-$(TARGET).a
+	$(CC) $(CFLAGS) -o $@ $(filter-out %.a,$^) $(filter %.a,$^) $(filter %.a,$^) $(LDFLAGS)
+
+
+%.ihex: %.$(TARGET)
+	$(OBJCOPY) $^ -O ihex $@
+
+%.bin: %.$(TARGET)
+	$(OBJCOPY) -O binary $< $@
+ 
+.PHONY: symbols.c
+ifdef CORE
+%.$(TARGET): %.co $(PROJECT_OBJECTFILES) $(INTERRUPT_OBJECTFILES) contiki-$(TARGET).a $(OBJECTDIR)/symbols.o
+	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $(filter-out %.a,$^) $(filter %.a,$^) $(filter %.a,$^)
+
+
+else
+%.$(TARGET): %-nosyms.$(TARGET).elf
+	ln -sf $< $@
+	$(SIZE) $<
+endif
+
+ifeq ($(PROG),openocd)
+%.u: %.bin
+	# Clear lock bits
+	$(OPENOCD) -s $(OPENOCD_DIR) -f $(OPENOCD_CFG) -c init -c "reset halt;sleep 250;flash probe 0;stm32x mass_erase 0; sleep 500;flash write_bank 0 $< 0;reset halt;resume;sleep 500;exit"
+else ifeq ($(PROG),qstlink)
+%.u: %.bin
+	qstlink2 --cli --erase --write $<
+endif
+
+upload: $(CONTIKI_PROJECT).u
+
+ocd_reset:
+	$(OPENOCD) -s $(OPENOCD_DIR) -f $(OPENOCD_CFG) -c init -c "reset halt;resume" -c exit
+
+# Don't use core/loader/elfloader.c, use elfloader-otf.c instead
+$(OBJECTDIR)/elfloader.o: 
+	echo -n >$@
+
+clean: clean_cpu
+
+.PHONY: stm32_bv_clean
+
+clean_cpu:
+	-rm -rf $(BUILTSRCDIR)
+	-rm -rf $(CONTIKI_PROJECT)-nosyms.$(TARGET).elf
+	-rm -rf $(CONTIKI_PROJECT).$(TARGET)
+
+.PRECIOUS: %-nosyms.$(TARGET).elf
