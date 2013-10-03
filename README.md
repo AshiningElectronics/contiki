@@ -1,19 +1,12 @@
-The Contiki Operating System
-============================
+The Contiki Operating System with stm32-bv support
+==================================================
 
-[![Build Status](https://secure.travis-ci.org/contiki-os/contiki.png)](http://travis-ci.org/contiki-os/contiki)
+This version of contiki adds support for the stm32f4 mcu and my stm32-bv
+motes.
 
-Contiki is an open source operating system that runs on tiny low-power
-microcontrollers and makes it possible to develop applications that
-make efficient use of the hardware while providing standardized
-low-power wireless communication for a range of hardware platforms.
+You can read about the hardware and get all the design files here:
 
-Contiki is used in numerous commercial and non-commercial systems,
-such as city sound monitoring, street lights, networked electrical
-power meters, industrial monitoring, radiation monitoring,
-construction site monitoring, alarm systems, remote house monitoring,
-and so on.
+[http://vedder.se/2013/04/cc2520-and-stm32-rf-boards/](http://vedder.se/2013/04/cc2520-and-stm32-rf-boards/)
 
-For more information, see the Contiki website:
-
-[http://contiki-os.org](http://contiki-os.org)
+I'm currently writing a post about the process of porting contiki to the
+stm32f4. I will add a link to that post here when I'm done.
