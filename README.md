@@ -8,5 +8,6 @@ You can read about the hardware and get all the design files here:
 
 [http://vedder.se/2013/04/cc2520-and-stm32-rf-boards/](http://vedder.se/2013/04/cc2520-and-stm32-rf-boards/)
 
-I'm currently writing a post about the process of porting contiki to the
-stm32f4. I will add a link to that post here when I'm done.
+I have also documented how I made this port and how to use it. You can read about it here:
+
+[http://vedder.se/2013/10/a-contiki-port-for-my-custom-cc2520stm32f4-boards/](http://vedder.se/2013/10/a-contiki-port-for-my-custom-cc2520stm32f4-boards/)
