@@ -64,10 +64,10 @@ typedef enum {
 	MAC_EVENT_DROPPED,
 	MAC_EVENT_TX
     /*    MAC_EVENT_TIMER */
-} event_t;
+} fi_trigger_t;
 
 typedef struct {
-    event_t event;  /**< Event type, see event_t for details. */
+    fi_trigger_t event;  /**< Event type, see event_t for details. */
     uint8_t *data;  /**< Associated data that goes with the event.  Depends on event type. */
 } event_object_t;
 

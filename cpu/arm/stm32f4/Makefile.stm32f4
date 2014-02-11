@@ -6,17 +6,20 @@ CONTIKI_CPU=$(CONTIKI_CPU_ARM)/stm32f4
 
 ### Define the source files we have in the STM32F4 port
 include $(CONTIKI_CPU)/lib/lib.mk
+include $(CONTIKI_CPU)/lib/CMSIS/DSP_Lib/cmsis.mk
 
 CONTIKI_CPU_DIRS =	. $(STM32_CORE) $(STM32_CONF) $(CMSIS) $(STDPERIPH_DIR) \
 					$(USB_OTG_PATH) $(USB_DEVICE_CORE_PATH) \
-					$(USB_DEVICE_CLASS_CDC_PATH)
+					$(USB_DEVICE_CLASS_CDC_PATH) \
+					$(CMSIS_DIR) $(CMSIS_INCLUDE)
 
 STM32F4 = clock.c system_stm32f4xx.c rtimer-arch.c startup_stm32f4.c
 
 TARGETLIBS =	$(STDPERIPH_SRC) $(USB_OTG_SRC) $(USB_DEVICE_CORE_SRC) \
 				$(USB_DEVICE_CLASS_CDC_SRC) random.c watchdog.c \
 				uip_arch.c me.c me_tabs.c slip.c crc16.c \
-				debug-buffer.c
+				debug-buffer.c \
+				$(CMSIS_SRC)
 
 ifeq ($(SLIP_USB_CDC),1)
 TARGETLIBS += slip-usb-cdc.c
@@ -60,12 +63,14 @@ OPENOCD_CFG = arm7_wig.cfg
 # qstlink
 
 # Use qstlink by default
-PROG=qstlink
+#PROG=qstlink
+PROG=openocd
 
 ARCH_FLAGS = -mlittle-endian -mthumb -mthumb-interwork -mcpu=cortex-m4
 
 # Hard float
 ARCH_FLAGS += -fsingle-precision-constant -Wdouble-promotion
+#ARCH_FLAGS += -mfpu=fpv4-sp-d16 -mfloat-abi=softfp
 ARCH_FLAGS += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 # or soft float
 #ARCH_FLAGS += -msoft-float
@@ -76,7 +81,10 @@ CFLAGSNO = -I. -I$(CONTIKI)/core -I$(CONTIKI_CPU) -I$(CONTIKI_CPU)/loader \
            -DWITH_ASCII -DMCK=$(MCK) \
            -Wall $(ARCH_FLAGS) \
            -Wno-strict-aliasing
-           
+
+# CMSIS lib
+CFLAGS 		+= -D__FPU_PRESENT=1 -D__FPU_USED=1 -DARM_MATH_CM4 -DARM_MATH_MATRIX_CHECK -DARM_MATH_ROUNDING
+
 CFLAGS  += $(CFLAGSNO) -DRUN_AS_SYSTEM -DROM_RUN
 LDFLAGS += -L $(CONTIKI_CPU) -T $(LINKERSCRIPT) \
            -nostartfiles
@@ -156,9 +164,8 @@ else
 endif
 
 ifeq ($(PROG),openocd)
-%.u: %.bin
-	# Clear lock bits
-	$(OPENOCD) -s $(OPENOCD_DIR) -f $(OPENOCD_CFG) -c init -c "reset halt;sleep 250;flash probe 0;stm32x mass_erase 0; sleep 500;flash write_bank 0 $< 0;reset halt;resume;sleep 500;exit"
+%.u: %-nosyms.$(TARGET).elf
+	openocd -f interface/stlink-v2.cfg -c "set WORKAREASIZE 0x2000" -f target/stm32f4x_stlink.cfg -c "program $< verify reset"
 else ifeq ($(PROG),qstlink)
 %.u: %.bin
 	qstlink2 --cli --erase --write $<
