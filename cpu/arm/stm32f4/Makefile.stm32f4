@@ -70,8 +70,8 @@ ARCH_FLAGS = -mlittle-endian -mthumb -mthumb-interwork -mcpu=cortex-m4
 
 # Hard float
 ARCH_FLAGS += -fsingle-precision-constant -Wdouble-promotion
-#ARCH_FLAGS += -mfpu=fpv4-sp-d16 -mfloat-abi=softfp
-ARCH_FLAGS += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
+ARCH_FLAGS += -mfpu=fpv4-sp-d16 -mfloat-abi=softfp
+#ARCH_FLAGS += -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 # or soft float
 #ARCH_FLAGS += -msoft-float
 
