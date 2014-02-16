@@ -7,7 +7,7 @@
 
 #include "contiki.h"
 #include "dev/leds.h"
-#include "dev/cc2520.h"
+#include "dev/cc2520/cc2520.h"
 #include <stdio.h>
 
 /*---------------------------------------------------------------------------*/

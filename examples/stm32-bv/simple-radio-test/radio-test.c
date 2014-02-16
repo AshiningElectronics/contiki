@@ -1,5 +1,5 @@
 #include "contiki.h"
-#include "net/rime.h"
+#include "net/rime/rime.h"
 #include "dev/leds.h"
 #include <stdio.h>
 #include <string.h>

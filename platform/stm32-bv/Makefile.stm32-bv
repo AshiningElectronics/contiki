@@ -52,6 +52,11 @@ include $(CONTIKI)/cpu/arm/stm32f4/Makefile.stm32f4
 
 #contiki-$(TARGET).a: ${addprefix $(OBJECTDIR)/,symbols.o}
 
+MODULES += core/net/ipv6 core/net/ipv4 core/net/rime core/net/mac \
+           core/net core/net/ip core/net/rpl \
+           core/net/mac/contikimac core/net/mac/cxmac \
+           dev/cc2520
+
 ifndef BASE_IP
 BASE_IP := 172.16.1.1
 endif

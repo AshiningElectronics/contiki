@@ -3,7 +3,7 @@
 #include "stm32f4xx_conf.h"
 
 #include "dev/spi.h"
-#include "dev/cc2520.h"
+#include "dev/cc2520/cc2520.h"
 
 #ifdef CC2520_CONF_SFD_TIMESTAMPS
 #define CONF_SFD_TIMESTAMPS CC2520_CONF_SFD_TIMESTAMPS
