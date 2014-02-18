@@ -18,8 +18,11 @@ STM32F4 = clock.c system_stm32f4xx.c rtimer-arch.c startup_stm32f4.c
 TARGETLIBS =	$(STDPERIPH_SRC) $(USB_OTG_SRC) $(USB_DEVICE_CORE_SRC) \
 				$(USB_DEVICE_CLASS_CDC_SRC) random.c watchdog.c \
 				uip_arch.c me.c me_tabs.c slip.c crc16.c \
-				debug-buffer.c \
-				$(CMSIS_SRC)
+				debug-buffer.c
+
+ifeq ($(USE_DSP_LIB),1)
+TARGETLIBS += $(CMSIS_SRC)
+endif
 
 ifeq ($(SLIP_USB_CDC),1)
 TARGETLIBS += slip-usb-cdc.c
@@ -54,15 +57,7 @@ PROJECT_OBJECTFILES += ${addprefix $(OBJECTDIR)/,$(CONTIKI_TARGET_MAIN:.c=.o)}
 # The linker script
 LINKERSCRIPT = $(CONTIKI_CPU)/STM32F4.ld
 
-# JTAG program upload
-OPENOCD	 = openocd
-OPENOCD_DIR = $(CONTIKI_CPU_ARM)/openocd/ 
-OPENOCD_CFG = arm7_wig.cfg
-
-# USB program upload
-# qstlink
-
-# Use qstlink by default
+# Use qstlink or OpenOCD
 #PROG=qstlink
 PROG=openocd
 
@@ -172,9 +167,6 @@ else ifeq ($(PROG),qstlink)
 endif
 
 upload: $(CONTIKI_PROJECT).u
-
-ocd_reset:
-	$(OPENOCD) -s $(OPENOCD_DIR) -f $(OPENOCD_CFG) -c init -c "reset halt;resume" -c exit
 
 # Don't use core/loader/elfloader.c, use elfloader-otf.c instead
 $(OBJECTDIR)/elfloader.o: 
