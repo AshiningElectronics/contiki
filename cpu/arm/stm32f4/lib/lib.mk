@@ -51,10 +51,7 @@ USB_OTG_PATH = lib/USB_OTG
 
 USB_OTG_SRC = 	usb_core.c \
 				usb_dcd.c \
-				usb_dcd_int.c \
-				usb_hcd.c \
-				usb_hcd_int.c \
-				usb_otg.c
+				usb_dcd_int.c
 
 
 ############# USB_DEVICE_CORE #############

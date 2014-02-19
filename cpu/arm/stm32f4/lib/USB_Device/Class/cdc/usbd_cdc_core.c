@@ -2,8 +2,8 @@
   ******************************************************************************
   * @file    usbd_cdc_core.c
   * @author  MCD Application Team
-  * @version V1.0.0
-  * @date    22-July-2011
+  * @version V1.1.0
+  * @date    19-March-2012
   * @brief   This file provides the high layer firmware functions to manage the 
   *          following functionalities of the USB CDC Class:
   *           - Initialization and Configuration of high and low layer
@@ -43,17 +43,23 @@
   *      
   *  @endverbatim
   *                                  
-  ******************************************************************************               
+  ******************************************************************************
   * @attention
   *
-  * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
-  * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
-  * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
-  * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
-  * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
-  * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+  * <h2><center>&copy; COPYRIGHT 2012 STMicroelectronics</center></h2>
   *
-  * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+  * Licensed under MCD-ST Liberty SW License Agreement V2, (the "License");
+  * You may not use this file except in compliance with the License.
+  * You may obtain a copy of the License at:
+  *
+  *        http://www.st.com/software_license_agreement_liberty_v2
+  *
+  * Unless required by applicable law or agreed to in writing, software 
+  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  * See the License for the specific language governing permissions and
+  * limitations under the License.
+  *
   ******************************************************************************
   */ 
 
@@ -497,8 +503,8 @@ static uint8_t  usbd_cdc_DeInit (void  *pdev,
 static uint8_t  usbd_cdc_Setup (void  *pdev, 
                                 USB_SETUP_REQ *req)
 {
-  uint16_t len;
-  uint8_t  *pbuf;
+  uint16_t len=USB_CDC_DESC_SIZ;
+  uint8_t  *pbuf=usbd_cdc_CfgDesc + 9;
   
   switch (req->bmRequest & USB_REQ_TYPE_MASK)
   {
@@ -624,7 +630,17 @@ static uint8_t  usbd_cdc_DataIn (void *pdev, uint8_t epnum)
   {
     if (APP_Rx_length == 0) 
     {
-      USB_Tx_State = 0;
+      if (((USB_OTG_CORE_HANDLE*)pdev)->dev.in_ep[epnum].xfer_len != CDC_DATA_IN_PACKET_SIZE)
+      {
+        USB_Tx_State = 0;
+        return USBD_OK;
+      }
+      /* Transmit zero sized packet in case the last one has maximum allowed size. Otherwise
+       * the recipient may expect more data coming soon and not return buffered data to app.
+       * See section 5.8.3 Bulk Transfer Packet Size Constraints
+       * of the USB Specification document.
+       */
+      USB_Tx_length = 0;
     }
     else 
     {
@@ -643,20 +659,19 @@ static uint8_t  usbd_cdc_DataIn (void *pdev, uint8_t epnum)
         APP_Rx_ptr_out += APP_Rx_length;
         APP_Rx_length = 0;
       }
-      
-      /* Prepare the available data buffer to be sent on IN endpoint */
-      DCD_EP_Tx (pdev,
-                 CDC_IN_EP,
-                 (uint8_t*)&APP_Rx_Buffer[USB_Tx_ptr],
-                 USB_Tx_length);
     }
+    /* Prepare the available data buffer to be sent on IN endpoint */
+    DCD_EP_Tx (pdev,
+               CDC_IN_EP,
+               (uint8_t*)&APP_Rx_Buffer[USB_Tx_ptr],
+               USB_Tx_length);
   }  
   
   return USBD_OK;
 }
 
 /**
-  * @brief  usbd_audio_DataOut
+  * @brief  usbd_cdc_DataOut
   *         Data received on non-control Out endpoint
   * @param  pdev: device instance
   * @param  epnum: endpoint number
@@ -808,4 +823,4 @@ static uint8_t  *USBD_cdc_GetOtherCfgDesc (uint8_t speed, uint16_t *length)
   * @}
   */ 
 
-/******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
+/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
